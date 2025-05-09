@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')) # Load .env file
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))  # Load .env file
 
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -17,7 +17,6 @@ db = SQLAlchemy()
 migrate = Migrate()
 socketio = SocketIO()
 
-
 def create_app():
     app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'a_default_secret_key')
@@ -28,22 +27,22 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     CORS(app)  # Enable CORS for all routes
-    socketio.init_app(app, cors_allowed_origins="*") # Allow all origins for SocketIO during development
+    socketio.init_app(app, cors_allowed_origins="*")  # Allow all origins for SocketIO during development
 
     # Import and register blueprints
-    # from src.routes.user import user_bp # Example, adjust as needed
-    # app.register_blueprint(user_bp, url_prefix='/api')    from src.routes.events import events_bp
-    app.register_blueprint(events_bp, url_prefix=\'/api\')
+    from src.routes.events import events_bp
+    app.register_blueprint(events_bp, url_prefix='/api')
 
     from src.routes.metrics import metrics_bp
-    app.register_blueprint(metrics_bp, url_prefix=\"/api\")
+    app.register_blueprint(metrics_bp, url_prefix='/api')
+
     from src.routes.export import export_bp
-    app.register_blueprint(export_bp, url_prefix=\"/api\")
+    app.register_blueprint(export_bp, url_prefix='/api')
 
     from src.routes.logs import logs_bp
-    app.register_blueprint(logs_bp, url_prefix=\"/api\")
+    app.register_blueprint(logs_bp, url_prefix='/api')
 
-    # Placeholder for admin blueprint    @app.route('/', defaults={'path': ''})
+    @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve(path):
         static_folder_path = app.static_folder
@@ -57,15 +56,13 @@ def create_app():
             if os.path.exists(index_path):
                 return send_from_directory(static_folder_path, 'index.html')
             else:
-                # If no index.html, and it's not an API call, return a simple message or 404
-                if not path.startswith('api/'): # Basic check, can be improved
+                if not path.startswith('api/'):
                     return "Welcome to the Traffic Tracker API. No frontend UI is available at the root yet.", 200
                 return "index.html not found and not an API route", 404
 
     return app
 
-app = create_app() # Create app instance for Gunicorn or direct run
+app = create_app()  # Create app instance for Gunicorn or direct run
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
-
