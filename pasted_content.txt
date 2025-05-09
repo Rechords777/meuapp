@@ -1,0 +1,103 @@
+# Objetivo: Criar o backend funcional do painel de rastreamento de tráfego e cliques inválidos
+
+## PLANNER MODULE
+
+1. Criar API REST com endpoints para:
+
+   * Registrar clique/conversão (`POST /event`)
+   * Buscar métricas filtradas (`GET /metrics`)
+   * Exportar dados (`GET /export?format=csv|pdf`)
+   * Listar alertas e logs (`GET /logs`)
+2. Implementar WebSocket para atualizar o painel em tempo real a cada novo clique/conversão
+3. Criar middleware de detecção de cliques inválidos baseado em:
+
+   * Frequência por IP
+   * User Agent suspeito
+   * Geolocalização incomum
+4. Integrar com API de IP (ipapi.co) para localização
+5. Registrar logs de cada evento com status (válido/inválido), IP, canal, dispositivo, país, horário
+6. Gerar relatórios em CSV e PDF via biblioteca (ex: `pdfkit`, `csv-writer`)
+7. Expor configuração de alerta (thresholds) via `.env` ou endpoint admin
+8. Oferecer integração com a API do Google Ads para:
+
+   * Proteger campanhas em tempo real contra cliques inválidos (inserção de IPs na lista de exclusão)
+   * Otimizar orçamento publicitário com base nos dados coletados
+9. \[Aguardar confirmação do usuário antes de iniciar frontend]
+
+**Critérios de sucesso:**
+
+* API responde com baixa latência
+* WebSocket envia eventos em tempo real corretamente
+* Logs armazenam todos eventos com validade e origem
+* Exportações funcionam com filtro aplicado
+* Integração com Google Ads aplica exclusões com sucesso
+
+## KNOWLEDGE MODULE
+
+* Node.js com Express para API + ws para WebSocket
+* MongoDB ou PostgreSQL para armazenar eventos e logs
+* Uso de bibliotecas de exportação (`json2csv`, `pdfkit`)
+* Conhecimento de regex e heurísticas para detectar bots
+* Integração com IP geolocation API (ipapi.co)
+* Uso da Google Ads API (OAuth 2.0, serviços de exclusão de IP, campanhas ativas)
+
+## DATASOURCE MODULE
+
+* ipapi.co para geolocalização de IPs
+* Lista de bots comuns (IAB bot list)
+* User agents comuns suspeitos (crawler, cli, phantom, etc)
+* Google Ads API para acesso a campanhas e configuração de IPs bloqueados
+
+**Critérios de detecção de clique inválido:**
+
+* +5 cliques do mesmo IP em 10s
+* User agent vazio, genérico ou CLI
+* Localização divergente da campanha
+
+## FERRAMENTAS E FLUXO DE EXECUÇÃO
+
+* **Shell:** Inicialização do servidor, dependências npm
+* **File:** Exportação de arquivos em `/exports/`
+* **Browser:** Recolher listas de bots e IPs suspeitos para fallback
+* **Google Ads API:** Aplicar bloqueio de IPs suspeitos via OAuth
+
+**Fallbacks:**
+
+* Se falhar API de IP, logar com geolocalização "desconhecida"
+* Se exportação PDF falhar, gerar somente CSV
+* Se falhar integração com Google Ads, registrar tentativa e notificar
+
+**Comunicações:**
+
+* **notify\_user:** Quando número de cliques inválidos atingir limiar ou exclusão no Ads for mal-sucedida
+* **ask\_user:** Confirmar thresholds padrão ou customizados?
+
+  * Agressivo: 3 cliques/IP/10s
+  * Balanceado: 5 cliques/IP/10s
+  * Flexível: 8 cliques/IP/10s
+  * Outro
+
+## DOCUMENTAÇÃO E ORGANIZAÇÃO
+
+* Estrutura de arquivos:
+
+  * `/src/api/`
+  * `/src/detector/`
+  * `/src/exporter/`
+  * `/src/google_ads/`
+  * `/logs/events.json`
+  * `/exports/report.pdf`
+* Definir formato JSON padrão para logs:
+
+```json
+{
+  "ip": "192.168.0.1",
+  "userAgent": "Mozilla/5.0",
+  "timestamp": "2025-04-30T15:00:00Z",
+  "country": "BR",
+  "channel": "Google Ads",
+  "device": "mobile",
+  "valid": false,
+  "reason": "userAgent=crawler"
+}
+```
