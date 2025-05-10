@@ -26,20 +26,18 @@ def create_app():
     # Initialize extensions with app
     db.init_app(app)
     migrate.init_app(app, db)
-    CORS(app)  # Enable CORS for all routes
-    socketio.init_app(app, cors_allowed_origins="*")  # Allow all origins for SocketIO during development
+    CORS(app)
+    socketio.init_app(app, cors_allowed_origins="*")
 
-    # Import and register blueprints
-    from src.routes.events import events_bp
+    # ✅ CORRIGIDO: imports diretos da raiz
+    from events import events_bp
+    from metrics import metrics_bp
+    from export import export_bp
+    from logs import logs_bp
+
     app.register_blueprint(events_bp, url_prefix='/api')
-
-    from src.routes.metrics import metrics_bp
     app.register_blueprint(metrics_bp, url_prefix='/api')
-
-    from src.routes.export import export_bp
     app.register_blueprint(export_bp, url_prefix='/api')
-
-    from src.routes.logs import logs_bp
     app.register_blueprint(logs_bp, url_prefix='/api')
 
     @app.route('/', defaults={'path': ''})
@@ -62,7 +60,7 @@ def create_app():
 
     return app
 
-app = create_app()  # Create app instance for Gunicorn or direct run
+app = create_app()
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
